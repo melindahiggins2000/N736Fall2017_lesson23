@@ -81,6 +81,12 @@ VARSTOCASES
   /NULL=KEEP
   /COUNT=countCases.
 
+* the INDEX created starts at 1 by default
+* we need to change this to start at 0.
+
+COMPUTE time0=Time-1. 
+EXECUTE.
+
 * save the long format as another filename.
 
 SAVE OUTFILE='C:\MyGithub\N736Fall2017_lesson23\helpmkh_pcslong.sav'
@@ -111,23 +117,23 @@ FREQUENCIES VARIABLES=pcs
 * this has a random intercept by subject (ID)
 * This model treats TIME as a factor.
 
-MIXED pcs BY Time
+MIXED pcs BY time0
   /CRITERIA=CIN(95) MXITER(100) MXSTEP(10) SCORING(1) SINGULAR(0.000000000001) HCONVERGE(0, 
     ABSOLUTE) LCONVERGE(0, ABSOLUTE) PCONVERGE(0.000001, ABSOLUTE)
-  /FIXED=Time | SSTYPE(3)
+  /FIXED=time0 | SSTYPE(3)
   /METHOD=REML
   /PRINT=CPS CORB COVB DESCRIPTIVES G  LMATRIX R SOLUTION TESTCOV
   /RANDOM=INTERCEPT | SUBJECT(id) COVTYPE(VC)
   /EMMEANS=TABLES(OVERALL)
-  /EMMEANS=TABLES(Time) COMPARE ADJ(SIDAK).
+  /EMMEANS=TABLES(time0) COMPARE ADJ(SIDAK).
 
 * we can also run TIME as a continuous covariate
 * like doing regression - assumes linear affect of time.
 
-MIXED pcs WITH Time
+MIXED pcs WITH time0
   /CRITERIA=CIN(95) MXITER(100) MXSTEP(10) SCORING(1) SINGULAR(0.000000000001) HCONVERGE(0, 
     ABSOLUTE) LCONVERGE(0, ABSOLUTE) PCONVERGE(0.000001, ABSOLUTE)
-  /FIXED=Time | SSTYPE(3)
+  /FIXED=time0 | SSTYPE(3)
   /METHOD=REML
   /PRINT=CPS CORB COVB DESCRIPTIVES G  LMATRIX R SOLUTION TESTCOV
   /RANDOM=INTERCEPT | SUBJECT(id) COVTYPE(VC)
@@ -146,7 +152,7 @@ EXECUTE.
 * plot these PCS time profiles for these few subjects.
 
 GRAPH
-  /SCATTERPLOT(BIVAR)=Time WITH pcs BY id
+  /SCATTERPLOT(BIVAR)=time0 WITH pcs BY id
   /MISSING=LISTWISE.
 
 FILTER OFF.
@@ -164,18 +170,18 @@ EXECUTE.
 * again the post hoc tests for the interaction
 * effect - edited manually like above.
 
-MIXED pcs BY treat Time
+MIXED pcs BY treat time0
   /CRITERIA=CIN(95) MXITER(100) MXSTEP(10) SCORING(1) SINGULAR(0.000000000001) HCONVERGE(0, 
     ABSOLUTE) LCONVERGE(0, ABSOLUTE) PCONVERGE(0.000001, ABSOLUTE)
-  /FIXED=treat Time treat*Time | SSTYPE(3)
+  /FIXED=treat time0 treat*time0 | SSTYPE(3)
   /METHOD=REML
   /PRINT=CPS CORB COVB DESCRIPTIVES G  LMATRIX R SOLUTION TESTCOV
   /RANDOM=INTERCEPT | SUBJECT(id) COVTYPE(VC)
   /EMMEANS=TABLES(OVERALL)
   /EMMEANS=TABLES(treat) COMPARE ADJ(SIDAK)
-  /EMMEANS=TABLES(Time) COMPARE ADJ(SIDAK)
-  /EMMEANS=TABLES(treat*Time) COMPARE(treat) ADJ(SIDAK)
-  /EMMEANS=TABLES(treat*Time) COMPARE(Time) ADJ(SIDAK).
+  /EMMEANS=TABLES(time0) COMPARE ADJ(SIDAK)
+  /EMMEANS=TABLES(treat*time0) COMPARE(treat) ADJ(SIDAK)
+  /EMMEANS=TABLES(treat*time0) COMPARE(time0) ADJ(SIDAK).
 
 * there is ALOT more to learn with MLM
 * the examples above only had a random intercept
@@ -186,12 +192,31 @@ MIXED pcs BY treat Time
 
 * treat fixed, time continuous.
 
-MIXED pcs BY treat WITH Time
+MIXED pcs BY treat WITH time0
   /CRITERIA=CIN(95) MXITER(100) MXSTEP(10) SCORING(1) SINGULAR(0.000000000001) HCONVERGE(0, 
     ABSOLUTE) LCONVERGE(0, ABSOLUTE) PCONVERGE(0.000001, ABSOLUTE)
-  /FIXED=treat Time treat*Time | SSTYPE(3)
+  /FIXED=treat time0 treat*time0 | SSTYPE(3)
   /METHOD=REML
   /PRINT=CPS CORB COVB DESCRIPTIVES G  LMATRIX R SOLUTION TESTCOV
   /RANDOM=INTERCEPT | SUBJECT(id) COVTYPE(UN)
   /EMMEANS=TABLES(treat) COMPARE ADJ(SIDAK)
   /EMMEANS=TABLES(OVERALL).
+
+* for the interaction - flip the treat group coding
+* and recheck the p-values.
+
+COMPUTE treat_flip=treat=0.
+EXECUTE.
+
+MIXED pcs BY treat_flip WITH time0
+  /CRITERIA=CIN(95) MXITER(100) MXSTEP(10) SCORING(1) SINGULAR(0.000000000001) HCONVERGE(0, 
+    ABSOLUTE) LCONVERGE(0, ABSOLUTE) PCONVERGE(0.000001, ABSOLUTE)
+  /FIXED=treat_flip time0 treat_flip*time0 | SSTYPE(3)
+  /METHOD=REML
+  /PRINT=CPS CORB COVB DESCRIPTIVES G  LMATRIX R SOLUTION TESTCOV
+  /RANDOM=INTERCEPT | SUBJECT(id) COVTYPE(UN)
+  /EMMEANS=TABLES(treat_flip) COMPARE ADJ(SIDAK)
+  /EMMEANS=TABLES(OVERALL).
+
+
+
