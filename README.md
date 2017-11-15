@@ -6,6 +6,6 @@ The code and supporting data and other files for this lesson are provided here i
 
 To see the HTML of the analysis output see:
 
-* SPSS []()
-* SAS []()
+* SPSS [https://melindahiggins2000.github.io/N736Fall2017_lesson23/SPSS_Output_lesson23.htm](https://melindahiggins2000.github.io/N736Fall2017_lesson23/SPSS_Output_lesson23.htm)
+* SAS [https://melindahiggins2000.github.io/N736Fall2017_lesson23/SAS_output_lesson23.htm](https://melindahiggins2000.github.io/N736Fall2017_lesson23/SAS_output_lesson23.htm)
 * R []()
