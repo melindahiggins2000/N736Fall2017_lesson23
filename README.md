@@ -6,6 +6,6 @@ The code and supporting data and other files for this lesson are provided here i
 
 To see the HTML of the analysis output see:
 
-* SPSS
-* SAS
-* R
+* SPSS []()
+* SAS []()
+* R []()
