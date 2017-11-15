@@ -209,7 +209,7 @@ run;
 
 proc mixed data=help2 method=REML covtest;
   class treat;
-  model pcs = treat time treat*time;
+  model pcs = treat time treat*time / solution;
   random intercept /  subject=id type=vc;
   lsmeans treat;
   run;

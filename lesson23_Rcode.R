@@ -21,48 +21,14 @@ helpdat <- haven::read_spss("helpmkh.sav")
 h1 <- helpdat %>%
   select(id, treat, pcs, pcs1, pcs2, pcs3, pcs4)
 
-
-
-
-
-
-
-# see https://gribblelab.wordpress.com/2009/03/09/repeated-measures-anova-using-r/
-# also see https://biostats.w.uib.no/test-for-sphericity-mauchly-test/
-
-treat <- h1$treat
-h2 <- h1[,3:7]
-h2 <- as.matrix(h2)
-
-m1 <- lm(h2 ~ treat)
-m1
-
-tfactor <- factor(c("t0","t1","t2","t3","t4"))
-gfactor <- factor(c("UC","HELP"))
-
-phase <- factor(rep(c("pretest", "posttest", "followup"), c(5, 5, 5)),
-                levels=c("pretest", "posttest", "followup"))
-hour <- ordered(rep(1:5, 3))
-idata <- data.frame(phase, hour)
-idata
-
-
-library(car)
-m1.aov <- Anova(m1, 
-                idata = data.frame(tfactor,gfactor),
-                idesign = ~tfactor*gfactor, 
-                type="III")
-#summary(m1.aov, multivariate=FALSE)
-summary(m1.aov, multivariate=TRUE)
-
 # restructure into long format
 
 h1long <- h1 %>%
   gather(key=item,
          value=value,
-         -c(id))
+         -c(id,treat))
 
-names(h1long) <- c("id","pcsitem","pcsvalue")
+names(h1long) <- c("id","treat","pcsitem","pcsvalue")
 
 # add a time variable to long format
 h1long <- h1long %>%
@@ -120,7 +86,7 @@ table(h1long_nomiss$time)
 
 h1se <- summarySE(h1long_nomiss, 
                   measurevar="pcsvalue", 
-                  groupvars=c("time"))
+                  groupvars=c("time","treat"))
 
 ggplot(h1se, aes(x=time, y=pcsvalue)) + 
   geom_errorbar(aes(ymin=pcsvalue-se, ymax=pcsvalue+se), width=.1) +
@@ -128,4 +94,26 @@ ggplot(h1se, aes(x=time, y=pcsvalue)) +
   geom_point() +
   xlab("Time Points") +
   ylab("Physical Component Score (SF-36 PCS)") +
-  ggtitle("PCS Means and CI's Over Time")
+  ggtitle("PCS Means and CI's Over Time") +
+  facet_wrap(~treat)
+
+# use nlme package
+library(nlme)
+
+lme1 <- lme(pcsvalue ~ time*treat,
+            data=h1long,
+            random= ~1 | id,
+            method="REML",
+            na.action=na.omit)
+# get summary - model coefficients
+# tests coefficients not equal to 0
+summary(lme1)
+
+# get anova tables - both
+# of these yield type III Sums of Squares
+anova.lme(lme1, type="marginal")
+car::Anova(lme1, type="III")
+
+# you can also use the lme4 package
+# read more at https://freshbiostats.wordpress.com/2013/07/28/mixed-models-in-r-lme4-nlme-both/
+# and just google nlme vs lme4 package
