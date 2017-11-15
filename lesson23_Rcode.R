@@ -114,6 +114,28 @@ summary(lme1)
 anova.lme(lme1, type="marginal")
 car::Anova(lme1, type="III")
 
+# FYI - sequential SS or Type II SS
+anova.lme(lme1, type="sequential")
+car::Anova(lme1, type="II")
+
 # you can also use the lme4 package
 # read more at https://freshbiostats.wordpress.com/2013/07/28/mixed-models-in-r-lme4-nlme-both/
 # and just google nlme vs lme4 package
+
+# flip treat and run again
+h1long <- h1long %>%
+  mutate(treat_flip = as.numeric(treat==0))
+
+lme2 <- lme(pcsvalue ~ time*treat_flip,
+            data=h1long,
+            random= ~1 | id,
+            method="REML",
+            na.action=na.omit)
+# get summary - model coefficients
+# tests coefficients not equal to 0
+summary(lme2)
+
+# get anova tables - both
+# of these yield type III Sums of Squares
+anova.lme(lme2, type="marginal")
+car::Anova(lme2, type="III")

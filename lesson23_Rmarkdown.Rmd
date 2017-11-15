@@ -11,22 +11,11 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 ```
 
+In this lesson, N736 Lesson 23 - Repeated Measures ANOVA and Multilevel (Mixed) Linear Models (MLM), we're going to add a BETWEEN group variable treat and look at multilevel (mixed) model approach.
+
+We're working with the `helpmkh` dataset
+
 ```{r}
-# ==================================
-# N736 Lesson 23 - Repeated Measures ANOVA
-# add a BETWEEN group variable treat
-# and look at multilevel (mixed) model approach
-#
-# dated 11/14/2017
-# Melinda Higgins, PhD
-# 
-# ==================================
-
-# ==================================
-# we're be working with the 
-# helpmkh dataset
-# ==================================
-
 library(tidyverse)
 library(haven)
 
@@ -34,14 +23,18 @@ helpdat <- haven::read_spss("helpmkh.sav")
 
 h1 <- helpdat %>%
   select(id, treat, pcs, pcs1, pcs2, pcs3, pcs4)
+```
 
+In `R` we need to restructure the data from a WIDE into a LONG format, where time is added as a variable (in a column) - so, since we have 5 time points each subject will have 5 rows of data. We accomplish this using the `gather()` function from the `tidyr` package, which was loaded with `tidyverse` above.
+
+```{r}
 # restructure into long format
-
 h1long <- h1 %>%
   gather(key=item,
          value=value,
          -c(id,treat))
 
+# rename the variables
 names(h1long) <- c("id","treat","pcsitem","pcsvalue")
 
 # add a time variable to long format
@@ -51,14 +44,21 @@ h1long <- h1long %>%
                 rep(2,453),
                 rep(3,453),
                 rep(4,453)))
+```
 
-# from the cookbook for R
-## Gives count, mean, standard deviation, standard error of the mean, and confidence interval (default 95%).
-##   data: a data frame.
-##   measurevar: the name of a column that contains the variable to be summariezed
-##   groupvars: a vector containing names of columns that contain grouping variables
-##   na.rm: a boolean that indicates whether to ignore NA's
-##   conf.interval: the percent range of the confidence interval (default is 95%)
+## From the "Cookbook for R" - Making an Error Bar Plot - Means Over Time
+
+See the article at [http://www.cookbook-r.com/Graphs/Plotting_means_and_error_bars_(ggplot2)/](http://www.cookbook-r.com/Graphs/Plotting_means_and_error_bars_(ggplot2)/) to get the code for the `summarySE` function.
+
+This function gives count, mean, standard deviation, standard error of the mean, and confidence interval (default 95%):
+
+* `data`: a data frame.
+* `measurevar`: the name of a column that contains the variable to be summariezed
+* `groupvars`: a vector containing names of columns that contain grouping variables
+* `na.rm`: a boolean that indicates whether to ignore NA's
+* `conf.interval`: the percent range of the confidence interval (default is 95%)
+
+```{r}
 summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
                       conf.interval=.95, .drop=TRUE) {
   library(plyr)
@@ -94,14 +94,23 @@ summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
   
   return(datac)
 }
+```
 
+This function is then used to create a error bar plot of the means over time and by `treat` group.
+
+```{r}
+# remove NA's missing values
 h1long_nomiss <- na.omit(h1long)
+
+# see how many values at each time point
 table(h1long_nomiss$time)
 
+# get summary stats using the summarySE function
 h1se <- summarySE(h1long_nomiss, 
                   measurevar="pcsvalue", 
                   groupvars=c("time","treat"))
 
+# make plot
 ggplot(h1se, aes(x=time, y=pcsvalue)) + 
   geom_errorbar(aes(ymin=pcsvalue-se, ymax=pcsvalue+se), width=.1) +
   geom_line() +
@@ -110,7 +119,13 @@ ggplot(h1se, aes(x=time, y=pcsvalue)) +
   ylab("Physical Component Score (SF-36 PCS)") +
   ggtitle("PCS Means and CI's Over Time") +
   facet_wrap(~treat)
+```
 
+## Multilevel (MIXED) Linear Modeling Approach
+
+There are 2 main packages for R to do MLM - either `nlme` or `lme4`. You can read more at [https://freshbiostats.wordpress.com/2013/07/28/mixed-models-in-r-lme4-nlme-both/](https://freshbiostats.wordpress.com/2013/07/28/mixed-models-in-r-lme4-nlme-both/). You can also google "nlme vs lme4 package".
+
+```{r}
 # use nlme package
 library(nlme)
 
@@ -119,6 +134,7 @@ lme1 <- lme(pcsvalue ~ time*treat,
             random= ~1 | id,
             method="REML",
             na.action=na.omit)
+
 # get summary - model coefficients
 # tests coefficients not equal to 0
 summary(lme1)
@@ -128,8 +144,31 @@ summary(lme1)
 anova.lme(lme1, type="marginal")
 car::Anova(lme1, type="III")
 
-# you can also use the lme4 package
-# read more at https://freshbiostats.wordpress.com/2013/07/28/mixed-models-in-r-lme4-nlme-both/
-# and just google nlme vs lme4 package
+# FYI - sequential SS or Type II SS
+anova.lme(lme1, type="sequential")
+car::Anova(lme1, type="II")
+```
+
+Flip the coding for the `treat ` group also and compare the results.
+
+```{r}
+# flip treat and run again
+h1long <- h1long %>%
+  mutate(treat_flip = as.numeric(treat==0))
+
+lme2 <- lme(pcsvalue ~ time*treat_flip,
+            data=h1long,
+            random= ~1 | id,
+            method="REML",
+            na.action=na.omit)
+
+# get summary - model coefficients
+# tests coefficients not equal to 0
+summary(lme2)
+
+# get anova tables - both
+# of these yield type III Sums of Squares
+anova.lme(lme2, type="marginal")
+car::Anova(lme2, type="III")
 ```
 
